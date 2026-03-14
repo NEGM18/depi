@@ -29,11 +29,11 @@ The dataset `Mall_Customers.csv` contains **200 customers** with the following f
 
 ## 🚀 Features
 
-- 📊 **Interactive Elbow Curve** to find optimal K
-- 🎨 **Color-coded Cluster Scatter Plot**
-- 🔢 **Sidebar Slider** to choose number of clusters dynamically
-- 🎯 **Customer Cluster Predictor** based on user input
-- 📋 Optional raw data view
+- **Interactive Elbow Curve** to find optimal K
+- **Color-coded Cluster Scatter Plot**
+- **Sidebar Slider** to choose number of clusters dynamically
+- **Customer Cluster Predictor** based on user input
+-   Optional raw data view
 
 ## 🛠️ Tech Stack
 
