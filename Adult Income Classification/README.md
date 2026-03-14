@@ -62,4 +62,4 @@ streamlit run main.py
 
 ## 🌐 Live Demo
 
-👉 [https://adult-income-classification-omar-negm.streamlit.app/](https://adult-income-classification-omar-negm.streamlit.app/)
+👉 [https://5vdjzzxsbwingmdzksfqxy.streamlit.app/](https://5vdjzzxsbwingmdzksfqxy.streamlit.app/)
