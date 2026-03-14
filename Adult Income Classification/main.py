@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import warnings
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -13,7 +12,6 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 warnings.filterwarnings("ignore")
 
-# ── Page Config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Adult Income Classification",
     page_icon="💼",
@@ -26,27 +24,22 @@ st.markdown(
     "based on US census data using **Logistic Regression**."
 )
 
-# ── Data Loading ─────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    # Try Kaggle path first, then local path
     kaggle_path = "/kaggle/input/us-adult-income-update/census.csv"
     local_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "census.csv")
     path = kaggle_path if os.path.exists(kaggle_path) else local_path
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
-    # Strip leading/trailing spaces from string values
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
     return df
 
 df = load_data()
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
 st.sidebar.header("⚙️ Settings")
 show_raw = st.sidebar.checkbox("Show raw data")
 test_size = st.sidebar.slider("Test set size (%)", min_value=10, max_value=40, value=20, step=5)
 
-# ── EDA Section ───────────────────────────────────────────────────────────────
 st.header("📊 Exploratory Data Analysis")
 
 col1, col2, col3 = st.columns(3)
@@ -58,10 +51,8 @@ if show_raw:
     st.subheader("Sample Data")
     st.dataframe(df.head(20), use_container_width=True)
 
-# Income distribution
 fig_dist, axes = plt.subplots(1, 2, figsize=(12, 4))
 
-# Income class bar chart
 income_counts = df["Income"].value_counts()
 axes[0].bar(income_counts.index, income_counts.values,
             color=["#4C72B0", "#DD8452"], edgecolor="white")
@@ -71,7 +62,6 @@ axes[0].set_ylabel("Count")
 for i, v in enumerate(income_counts.values):
     axes[0].text(i, v + 100, f"{v:,}\n({v/len(df)*100:.1f}%)", ha="center", fontsize=9)
 
-# Age distribution by Income
 df.groupby("Income")["Age"].plot(kind="kde", ax=axes[1], legend=True)
 axes[1].set_title("Age Distribution by Income Class")
 axes[1].set_xlabel("Age")
@@ -80,7 +70,6 @@ axes[1].set_ylabel("Density")
 plt.tight_layout()
 st.pyplot(fig_dist)
 
-# Hours per week distribution
 fig2, ax2 = plt.subplots(figsize=(12, 3))
 df.groupby("Income")["Hours_per_week"].plot(kind="kde", ax=ax2, legend=True)
 ax2.set_title("Hours per Week Distribution by Income")
@@ -90,41 +79,33 @@ st.pyplot(fig2)
 
 st.divider()
 
-# ── Preprocessing ─────────────────────────────────────────────────────────────
 st.header("🔧 Data Preprocessing")
 
 @st.cache_data
 def preprocess(df, test_sz):
     df = df.copy()
-    # Replace '?' with NaN and drop
     df.replace("?", np.nan, inplace=True)
     rows_before = len(df)
     df.dropna(inplace=True)
     rows_after = len(df)
 
-    # Target encoding
     df["Income"] = df["Income"].apply(lambda x: 1 if x.strip() == ">50K" else 0)
 
-    # Drop Fnlwgt (sampling weight, not a real feature)
     if "Fnlwgt" in df.columns:
         df.drop("Fnlwgt", axis=1, inplace=True)
 
-    # Identify categorical and numerical columns
     cat_cols = df.select_dtypes(include="object").columns.tolist()
     num_cols = [c for c in df.select_dtypes(include=np.number).columns if c != "Income"]
 
-    # One-Hot Encoding
     df_encoded = pd.get_dummies(df, columns=cat_cols, drop_first=True)
 
     X = df_encoded.drop("Income", axis=1)
     y = df_encoded["Income"]
 
-    # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_sz / 100, random_state=42, stratify=y
     )
 
-    # StandardScaler on numerical columns
     scaler = StandardScaler()
     num_in_encoded = [c for c in X_train.columns if c in num_cols]
     X_train[num_in_encoded] = scaler.fit_transform(X_train[num_in_encoded])
@@ -151,7 +132,6 @@ with st.expander("ℹ️ Preprocessing steps applied"):
 
 st.divider()
 
-# ── Model Training ────────────────────────────────────────────────────────────
 st.header("🤖 Model Training — Logistic Regression")
 
 @st.cache_resource
@@ -160,7 +140,6 @@ def train_model(X_train, y_train):
     model.fit(X_train, y_train)
     return model
 
-# Convert to numpy for caching compatibility
 model = train_model(X_train.values, y_train.values)
 y_pred = model.predict(X_test.values)
 accuracy = accuracy_score(y_test, y_pred)
@@ -172,7 +151,6 @@ col2.metric("Precision (>50K)", f"{report['>50K']['precision']*100:.1f}%")
 col3.metric("Recall (>50K)", f"{report['>50K']['recall']*100:.1f}%")
 col4.metric("F1-Score (>50K)", f"{report['>50K']['f1-score']*100:.1f}%")
 
-# Confusion Matrix
 st.subheader("Confusion Matrix")
 fig_cm, ax_cm = plt.subplots(figsize=(5, 4))
 cm = confusion_matrix(y_test, y_pred)
@@ -185,11 +163,9 @@ st.pyplot(fig_cm)
 
 st.divider()
 
-# ── Predict New Customer ───────────────────────────────────────────────────────
 st.header("🎯 Predict Income Class for a New Individual")
 st.markdown("Fill in the details below and click **Predict** to find out whether this person likely earns **>$50K/year**.")
 
-# Unique values from dataset for dropdowns
 workclasses = sorted([x for x in df["Workclass"].unique() if x != "?"])
 educations = sorted([x for x in df["Education"].unique()])
 marital_statuses = sorted([x for x in df["Marital_status"].unique()])
@@ -219,7 +195,6 @@ with col3:
     native_country = st.selectbox("Native Country", native_countries)
 
 if st.button("🔍 Predict Income Class", type="primary"):
-    # Build a single-row dataframe matching raw training data schema
     input_dict = {
         "Age": [age],
         "Workclass": [workclass],
@@ -237,7 +212,6 @@ if st.button("🔍 Predict Income Class", type="primary"):
     }
     input_df = pd.DataFrame(input_dict)
 
-    # Get Training data without Income and Fnlwgt for alignment
     df_train_raw = df.copy()
     df_train_raw.replace("?", np.nan, inplace=True)
     df_train_raw.dropna(inplace=True)
@@ -247,22 +221,18 @@ if st.button("🔍 Predict Income Class", type="primary"):
     else:
         df_train_raw.drop(["Income"], axis=1, inplace=True)
 
-    # Combine input with training data to get all one-hot columns correctly
     combined = pd.concat([df_train_raw, input_df], ignore_index=True)
     combined_encoded = pd.get_dummies(combined, drop_first=True)
     input_encoded = combined_encoded.iloc[[-1]]
 
-    # Align columns to training feature columns
     for col in feature_cols:
         if col not in input_encoded.columns:
             input_encoded[col] = 0
     input_encoded = input_encoded[feature_cols]
 
-    # Scale numerical columns
     num_in_encoded = [c for c in input_encoded.columns if c in num_cols]
     input_encoded[num_in_encoded] = scaler.transform(input_encoded[num_in_encoded])
 
-    # Predict
     prediction = model.predict(input_encoded.values)[0]
     probability = model.predict_proba(input_encoded.values)[0]
 

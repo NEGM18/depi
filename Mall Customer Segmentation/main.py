@@ -8,18 +8,15 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# Set page config
 st.set_page_config(page_title="Mall Customer Segmentation", page_icon="🛍️", layout="wide")
 
 st.title("🛍️ Mall Customer Segmentation")
 st.markdown("Group mall customers based on their **Annual Income** and **Spending Score** using the **K-Means Clustering** algorithm.")
 
-# Load data
 @st.cache_data
 def load_data():
     file_path = "Mall_Customers.csv"
     if not os.path.exists(file_path):
-        # Fallback if run from a different directory
         file_path = os.path.join(os.path.dirname(__file__), "Mall_Customers.csv")
     
     df = pd.read_csv(file_path)
@@ -29,26 +26,21 @@ df = load_data()
 
 st.sidebar.header("Settings")
 
-# Sidebar - data overview
 if st.sidebar.checkbox("Show raw data"):
     st.subheader("Raw Data Summary")
     st.dataframe(df)
 
-# Feature extraction
-# Features: Annual Income (index 3) and Spending Score (index 4)
 X = df.iloc[:, [3, 4]].values 
 
 st.subheader("Elbow Method for Optimal K")
 st.markdown("The **Elbow Method** helps identify the optimal number of clusters by finding the 'elbow' point where the Within-Cluster-Sum-of-Squares (WCSS) starts to decrease at a slower rate.")
 
-# Calculate WCSS for K=1 to 10
 wcss = []
 for i in range(1, 11):
     kmeans = KMeans(n_clusters=i, init='k-means++', n_init=10, random_state=42)
     kmeans.fit(X)
     wcss.append(kmeans.inertia_)
 
-# Plot Elbow curve
 fig_elbow, ax_elbow = plt.subplots(figsize=(8, 4))
 ax_elbow.plot(range(1, 11), wcss, marker='o', linestyle='-', color='b')
 ax_elbow.set_title('The Elbow Method')
@@ -59,19 +51,14 @@ ax_elbow.grid(True, linestyle='--', alpha=0.7)
 st.pyplot(fig_elbow)
 
 st.divider()
-
-# K-Means Clustering
 st.subheader("K-Means Clustering Results")
 st.markdown("Based on the Elbow curve above, choose the optimal number of clusters.")
 
-# Sidebar slider for K
 k_clusters = st.sidebar.slider("Select the number of clusters (K)", min_value=2, max_value=10, value=5, step=1)
 
-# Fit KMeans with user selected K
 kmeans = KMeans(n_clusters=k_clusters, init='k-means++', n_init=10, random_state=42)
 y_kmeans = kmeans.fit_predict(X)
 
-# Scatter plot
 fig_clusters, ax_clusters = plt.subplots(figsize=(10, 6))
 
 colors = sns.color_palette("husl", k_clusters)
@@ -91,7 +78,6 @@ st.pyplot(fig_clusters)
 
 st.divider()
 
-# Predict Cluster for a New Customer
 st.subheader("Predict Customer Cluster")
 st.markdown("Enter the Annual Income and Spending Score of a customer to predict which cluster they belong to.")
 
@@ -104,9 +90,7 @@ with col2:
     new_score = st.number_input("Spending Score (1-100)", min_value=1, max_value=100, value=50, step=1)
 
 if st.button("Predict Cluster", type="primary"):
-    # Predict the cluster using the current KMeans model
     predicted_cluster = kmeans.predict([[new_income, new_score]])[0]
     
-    # Display the result
     st.success(f"🎯 Based on the input, this customer belongs to **Cluster {predicted_cluster + 1}**!")
     st.info(f"You can interpret this cluster by looking at the scatter plot above (Cluster {predicted_cluster + 1}).")
